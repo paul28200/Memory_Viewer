@@ -38,7 +38,7 @@ entity Gen_Video_MV is
 					Data_Char_in : in std_logic_vector(7 downto 0);
 					Col_out : out std_logic_vector(6 downto 0);
 					Line_out : out std_logic_vector(5 downto 0);
-					graphic : in std_logic);	-- graphic = 0 pour jeu de caractères graphiques
+					graphic : in std_logic);	-- graphic = 0 pour jeu de caractÃ¨res graphiques
 					
 end Gen_Video_MV;
 
@@ -118,8 +118,6 @@ begin
 	
 	address_displayed_character (10 downto 0) <= std_logic_vector(to_unsigned((address_displayed_character_col + address_displayed_character_line),11));
 
-	Col_out <= std_logic_vector(to_unsigned(address_displayed_character_col, Col_out'length));
-	Line_out <= std_logic_vector(to_unsigned(address_displayed_character_line, Line_out'length));
 
 end Behavioral;
 
