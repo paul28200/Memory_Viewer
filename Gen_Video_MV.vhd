@@ -1,39 +1,13 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date:    21:23:49 11/19/2018 
--- Design Name: 
--- Module Name:    Generation_Video - Behavioral 
--- Project Name: 
--- Target Devices: 
--- Tool versions: 
--- Description: 
---
--- Dependencies: 
---
--- Revision: 
--- Revision 0.01 - File Created
--- Additional Comments: 
---
-----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-  use ieee.std_logic_unsigned.all;
-    use ieee.numeric_std.all;
+use ieee.std_logic_unsigned.all;
+use ieee.numeric_std.all;
 
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx primitives in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
 
 entity Gen_Video_MV is
 			port(	clk_50Mhz : in std_logic;
 					VGA_VSYNC, VGA_HSYNC : out std_logic;
+					VGA_VBLANK, VGA_HBLANK, DOTCLK : out std_logic;
 					VGA_GREEN : out std_logic;
 					Data_Char_in : in std_logic_vector(7 downto 0);
 					Col_out : out std_logic_vector(6 downto 0);
@@ -43,7 +17,7 @@ entity Gen_Video_MV is
 end Gen_Video_MV;
 
 architecture Behavioral of Gen_Video_MV is
-					signal clk_25MHz : std_logic;
+					signal ce_int : std_logic;
 					signal VGA_OUT_enable : std_logic;
 					signal address_displayed_character, address_displayed_character_tmp : STD_LOGIC_VECTOR (10 downto 0);
 					signal we_tmp : std_logic;
@@ -57,10 +31,23 @@ architecture Behavioral of Gen_Video_MV is
 					--test
 					signal displayed_character_tmp : std_logic_vector(7 downto 0);
 				
-	component VGA_Sync_gen port (clk_25MHz : in std_logic;
+	component VGA_Sync_gen port (clk, ce : in std_logic;
 								pixel_col_out : out std_logic_vector(3 downto 0);
 								pixel_line_out : out std_logic_vector(4 downto 0);
 								VGA_VSYNC, VGA_HSYNC, VGA_OUT_enable : out std_logic;
+								VGA_VBLANK, VGA_HBLANK, DOTCLK : out std_logic;
+								address_displayed_character_col : buffer integer range 0 to 80:=0;
+								address_displayed_character_line : buffer integer range 0 to 2000:=0;
+								Col_out : out std_logic_vector(6 downto 0);
+								Line_out : out std_logic_vector(5 downto 0);
+								interligne : in std_logic);
+								end component;
+	
+		component TV_Sync_gen port (CLK, ce : in std_logic;
+								pixel_col_out : out std_logic_vector(3 downto 0);
+								pixel_line_out : out std_logic_vector(4 downto 0);
+								VSYNC, HSYNC, OUT_enable : out std_logic;
+								VBLANK, HBLANK, DOTCLK : out std_logic;
 								address_displayed_character_col : buffer integer range 0 to 80:=0;
 								address_displayed_character_line : buffer integer range 0 to 2000:=0;
 								Col_out : out std_logic_vector(6 downto 0);
@@ -68,7 +55,7 @@ architecture Behavioral of Gen_Video_MV is
 								interligne : in std_logic);
 								end component;
 								
-	component Chargen port (clk_25MHz : in  STD_LOGIC;
+	component Chargen port (clk, ce : in  STD_LOGIC;
 								pixel_col : in  STD_LOGIC_VECTOR (2 downto 0);
 								pixel_line : in  STD_LOGIC_VECTOR (4 downto 0);
 								graphic : in  STD_LOGIC;
@@ -78,30 +65,34 @@ architecture Behavioral of Gen_Video_MV is
 								end component;
 
 begin
-	--Clock 25MHz
+--	Clock 25MHz
 	process(clk_50MHz)
 	begin
-		if clk_50MHz='1' and clk_50MHz'event then
-			clk_25MHz <= not clk_25MHz;
+		if clk_50MHz = '1' and clk_50MHz'event then
+			ce_int <= not ce_int;
 		end if;
 	end process;
 
-
 	Inst_VGA_Sync_gen : VGA_Sync_gen port map (
-								clk_25MHz => clk_25MHz,
+								clk => clk_50MHz,
+								ce => ce_int,
 								pixel_col_out => pixel_col,
 								pixel_line_out => pixel_line,
 								VGA_VSYNC => VGA_VSYNC,
 								VGA_HSYNC => VGA_HSYNC,
+								VGA_VBLANK => VGA_VBLANK,
+								VGA_HBLANK => VGA_HBLANK,
+								DOTCLK => DOTCLK,
 								VGA_OUT_enable => VGA_OUT_enable,
 								address_displayed_character_col => address_displayed_character_col,
 								address_displayed_character_line => address_displayed_character_line,
 								Col_out => Col_out,
 								Line_out => Line_out,
 								interligne => '1');
-	
+
 	Inst_Chargen : Chargen port map( 
-								clk_25MHz => clk_25MHz,
+								clk => clk_50MHz,
+								ce => ce_int,
 								pixel_col => pixel_col_tmp,
 								pixel_line => pixel_line,
 								graphic => graphic,
@@ -120,4 +111,3 @@ begin
 
 
 end Behavioral;
-
