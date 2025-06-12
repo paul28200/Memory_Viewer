@@ -23,17 +23,13 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
-
 entity Memory_Viewer is
   Port (clk_50MHz : in std_logic;
   
 			--VGA output
 			VGA_VSYNC, VGA_HSYNC : out std_logic;
 			VGA_RED, VGA_GREEN, VGA_BLUE : out std_logic_vector(4 downto 0);
+			VGA_VBLANK, VGA_HBLANK, DOTCLK : out std_logic;
 			
 			--Read Memory
 			Addr : out std_logic_vector(23 downto 0);
@@ -49,6 +45,7 @@ architecture Behavioral of Memory_Viewer is
 	component Gen_Video_MV port(
 					clk_50Mhz : in std_logic;
 					VGA_VSYNC, VGA_HSYNC : out std_logic;
+					VGA_VBLANK, VGA_HBLANK, DOTCLK : out std_logic;
 					VGA_GREEN : out std_logic;
 					Data_Char_in : in std_logic_vector(7 downto 0);
 					Col_out : out std_logic_vector(6 downto 0);
@@ -81,7 +78,7 @@ architecture Behavioral of Memory_Viewer is
 	signal sel_nibble, clear, reverse : std_logic;
 	signal Disp_byte : std_logic_vector(7 downto 0);
 	
-	signal Disp_addr : std_logic_vector(23 downto 0) := (others => '0');
+	signal Disp_addr : std_logic_vector(23 downto 0) := x"000000";
 	signal Cur_Col : integer range 0 to 31 := 0;
 	signal Cur_Line : integer range 0 to 25 := 0;
 	
@@ -165,6 +162,9 @@ Disp_addr(3 downto 0) <= "0000";
 					clk_50Mhz => clk_50Mhz,
 					VGA_VSYNC => V_Sync_t,
 					VGA_HSYNC => VGA_HSYNC,
+					VGA_VBLANK => VGA_VBLANK,
+					VGA_HBLANK => VGA_HBLANK,
+					DOTCLK => DOTCLK,
 					VGA_GREEN => Video,
 					Data_Char_in => Data_Char_in,
 					Col_out => Col_out,
@@ -258,18 +258,22 @@ end process;
 process(V_Sync_t)
 	variable cnt : integer range 0 to 15 := 0;
 	variable cnt2 : integer range 0 to 31;
+	variable V_Sync_r : std_logic;
 begin
-if V_Sync_t'event and V_Sync_t = '1' then
-	if cnt < 15 then
-		cnt := cnt + 1;
-		rst_n <= '0';
-	else
-		rst_n <= '1';
+if clk_50MHz'event and clk_50MHz = '1' then
+	if V_Sync_r = '0' and V_Sync_t = '1' then
+		if cnt < 15 then
+			cnt := cnt + 1;
+			rst_n <= '0';
+		else
+			rst_n <= '1';
+		end if;
+		cnt2 := (cnt2 + 1) mod 32;
+		if cnt2 = 0 then
+			Cursor_on <= not Cursor_on;
+		end if;
 	end if;
-	cnt2 := (cnt2 + 1) mod 32;
-	if cnt2 = 0 then
-		Cursor_on <= not Cursor_on;
-	end if;
+	V_Sync_r := V_Sync_t;
 end if;
 end process;
 
