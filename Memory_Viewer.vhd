@@ -213,6 +213,7 @@ begin
 	Disp_byte <= x"00";
 	buffer_addr := to_integer(unsigned(Line_out) - 1)  * 16;
 	line_addr := std_logic_vector(to_unsigned(to_integer(unsigned(Disp_addr)) + buffer_addr, line_addr'length));
+	sel_nibble <= '-';
 	if unsigned(Col_out) < 60 then
 		sel_nibble <= not disp_format(to_integer(unsigned(Col_out)))(0);
 		-- Titles
@@ -255,13 +256,13 @@ end process;
 	  );
 
 -- Reset and Cursor
-process(V_Sync_t)
+process(clk_50MHz)
 	variable cnt : integer range 0 to 15 := 0;
 	variable cnt2 : integer range 0 to 31;
-	variable V_Sync_r : std_logic;
+	variable V_Sync_tr : std_logic;
 begin
 if clk_50MHz'event and clk_50MHz = '1' then
-	if V_Sync_r = '0' and V_Sync_t = '1' then
+	if V_Sync_tr = '0' and V_Sync_t = '1' then
 		if cnt < 15 then
 			cnt := cnt + 1;
 			rst_n <= '0';
@@ -273,7 +274,7 @@ if clk_50MHz'event and clk_50MHz = '1' then
 			Cursor_on <= not Cursor_on;
 		end if;
 	end if;
-	V_Sync_r := V_Sync_t;
+	V_Sync_tr := V_Sync_t;
 end if;
 end process;
 
